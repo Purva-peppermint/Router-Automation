@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
+
 import subprocess
 import pexpect
-# import getpass
 import sys
 
 print("=== Teltonika RUT200 Auto Configuration ===\n")
 
 # ---------------- USER INPUT ----------------
-ROUTER_IP = input("Enter router IP address: ").strip()
+ROUTER_IP = "192.168.1.1"
 SSH_USER = "root"
 
+print(f"Default Router IP: {ROUTER_IP}")
 current_password = input("Enter default password: ")
 
-# 🔹 Take machine ID
+#  Take machine ID
 machine_id = input("Enter machine ID: ").strip()
 
 def generate_password(machine_id):
@@ -23,14 +24,17 @@ def generate_password(machine_id):
         text=True
     )
     return result.stdout.split()[0] 
-# 🔹 Generate passwords
+#  Generate passwords
 new_admin_password = generate_password(machine_id) + "@T"
 wifi_password = generate_password(machine_id)
 
+wifi_ssid = machine_id  #input("Enter new WiFi SSID: ").strip()
+
+
 print(f"\nGenerated Admin Password: {new_admin_password}")
+print(f"Wifi ssid : {wifi_ssid}")
 print(f"Generated WiFi Password : {wifi_password}")
 
-wifi_ssid = input("Enter new WiFi SSID: ").strip()
 
 # ---------------- SSH CONNECT ----------------
 print(f"\nConnecting to {ROUTER_IP}...")
@@ -102,15 +106,15 @@ try:
     ssh.sendline("uci commit network")
     ssh.expect("#")
 
-    print("Restarting network, Router will be temporarily unreachable...")
-    print("This may take up to 1 minute. Please wait...")
+    # print("Restarting network, Router will be temporarily unreachable...")
+    # print("This may take up to 1 minute. Please wait...")
 
-    ssh.sendline("/etc/init.d/network restart")
+    # ssh.sendline("/etc/init.d/network restart")
 
-    try:
-        ssh.expect("#", timeout=100)
-    except:
-        print("Network restart triggered.")
+    # try:
+    #     ssh.expect("#", timeout=6)
+    # except:
+    #     print("Network restart triggered.")
 
     # ---------------- WIFI CONFIG ----------------
     print("\nApplying WiFi settings...")
@@ -123,11 +127,11 @@ try:
     ssh.expect("#")
     ssh.sendline("uci commit wireless")
     ssh.expect("#")
-
+    print("Wifi reloading may teake some time")
     ssh.sendline("wifi reload")
 
     try:
-        ssh.expect("#", timeout=60)
+        ssh.expect("#", timeout=30)
     except:
         print("WiFi reload triggered.")
 
@@ -138,16 +142,16 @@ try:
     print("\nConfiguration completed successfully!")
     print("Reconnect to the router using new WiFi credentials.")
 
-    ssh.expect(pexpect.EOF)
+    # ssh.expect(pexpect.EOF)
 
 # except pexpect.exceptions.TIMEOUT:
 #     print("\nTimeout: Router may be slow or rebooting.")
 
-except pexpect.exceptions.EOF:
-    print("\nDisconnected (expected if network restarted).")
+# except pexpect.exceptions.EOF:
+#     print("\nDisconnected (expected if network restarted).")
 
-except Exception as e:
-    print(f"\nError: {e}")
+# except Exception as e:
+#     print(f"\nError: {e}")
 
 finally:
     try:
