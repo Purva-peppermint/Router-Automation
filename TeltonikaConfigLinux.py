@@ -4,13 +4,14 @@ import subprocess
 import pexpect
 import sys
 
-print("=== Teltonika RUT200 Auto Configuration ===\n")
+print("=== Teltonika Router Auto Configuration ===\n")
 
 # ---------------- USER INPUT ----------------
 ROUTER_IP = "192.168.1.1"
 SSH_USER = "root"
 
 print(f"Default Router IP: {ROUTER_IP}")
+router = input("Enter router model (RUT200/RUTM51): ").strip().upper()
 current_password = input("Enter default password: ")
 
 #  Take machine ID
@@ -95,16 +96,17 @@ try:
     print("Password updated.")
 
     # ---------------- WAN → LAN ----------------
-    print("\nConverting WAN to LAN...")
-
-    ssh.sendline("uci add_list network.br_lan.ports='eth0.2'")
-    ssh.expect("#")
-    ssh.sendline("uci delete network.wan.device")
-    ssh.expect("#")
-    ssh.sendline("uci delete network.wan6.device")
-    ssh.expect("#")
-    ssh.sendline("uci commit network")
-    ssh.expect("#")
+    if router == "RUT200":
+        print("\nConverting WAN to LAN...")
+        ssh.sendline("uci add_list network.br_lan.ports='eth0.2'")
+        ssh.expect("#")
+        ssh.sendline("uci delete network.wan.device")
+        ssh.expect("#")
+        ssh.sendline("uci delete network.wan6.device")
+        ssh.expect("#")
+        ssh.sendline("uci commit network")
+        ssh.expect("#")
+   
 
     # print("Restarting network, Router will be temporarily unreachable...")
     # print("This may take up to 1 minute. Please wait...")
@@ -117,18 +119,49 @@ try:
     #     print("Network restart triggered.")
 
     # ---------------- WIFI CONFIG ----------------
-    print("\nApplying WiFi settings...")
+        print("\nApplying WiFi settings...")
 
-    ssh.sendline(f"uci set wireless.default_radio0.ssid='{wifi_ssid}'")
-    ssh.expect("#")
-    ssh.sendline(f"uci set wireless.default_radio0.key='{wifi_password}'")
-    ssh.expect("#")
-    ssh.sendline("uci set wireless.default_radio0.encryption='psk2'")
-    ssh.expect("#")
-    ssh.sendline("uci commit wireless")
-    ssh.expect("#")
-    print("Wifi reloading may teake some time")
-    ssh.sendline("wifi reload")
+        ssh.sendline(f"uci set wireless.default_radio0.ssid='{wifi_ssid}'")
+        ssh.expect("#")
+        ssh.sendline(f"uci set wireless.default_radio0.key='{wifi_password}'")
+        ssh.expect("#")
+        ssh.sendline("uci set wireless.default_radio0.encryption='psk2'")
+        ssh.expect("#")
+        ssh.sendline("uci commit wireless")
+        ssh.expect("#")
+        print("Wifi reloading may teake some time")
+        ssh.sendline("wifi reload")
+
+    elif router == "RUTM51":
+
+        print("\nConverting WAN to LAN...")
+
+        ssh.sendline("uci add_list network.br_lan.ports='wan'")
+        ssh.expect("#")
+        ssh.sendline("uci delete network.wan.device")
+        ssh.expect("#")
+        ssh.sendline("uci delete network.wan6.device")
+        ssh.expect("#")
+        ssh.sendline("uci commit network")
+        ssh.expect("#")
+
+
+        print("\nApplying WiFi settings...")
+        ssh.sendline(f"uci set wireless.default_radio0.disabled='1'") #Disable 2g
+        ssh.expect("#")
+        ssh.sendline(f"uci set wireless.default_radio1.ssid='{wifi_ssid}'") #Set 5g ssid
+        ssh.expect("#")
+        ssh.sendline(f"uci set wireless.default_radio1.key='{wifi_password}'") #Set 5g password
+        ssh.expect("#")
+        ssh.sendline("uci set wireless.default_radio1.encryption='psk2'")
+        ssh.expect("#")
+        ssh.sendline("uci commit wireless")
+        ssh.expect("#")
+        print("Wifi reloading may teake some time")
+        ssh.sendline("wifi reload")
+
+    else:
+        print("Unknown router model. Skipping WAN to LAN conversion and WiFi configuration.")
 
     try:
         ssh.expect("#", timeout=30)
