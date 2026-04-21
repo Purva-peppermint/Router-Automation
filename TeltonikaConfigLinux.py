@@ -12,6 +12,9 @@ SSH_USER = "root"
 
 print(f"Default Router IP: {ROUTER_IP}")
 router = input("Enter router model (RUT200/RUTM51): ").strip().upper()
+if router not in ("RUT200", "RUTM51"):
+    print(f"Invalid router model '{router}'. Accepted models: RUT200, RUTM51. Exiting.")
+    sys.exit(1)
 current_password = input("Enter default password: ")
 
 #  Take machine ID
@@ -129,7 +132,7 @@ try:
         ssh.expect("#")
         ssh.sendline("uci commit wireless")
         ssh.expect("#")
-        print("Wifi reloading may teake some time")
+        print("Wifi reloading may take some time")
         ssh.sendline("wifi reload")
 
     elif router == "RUTM51":
@@ -157,7 +160,7 @@ try:
         ssh.expect("#")
         ssh.sendline("uci commit wireless")
         ssh.expect("#")
-        print("Wifi reloading may teake some time")
+        print("Wifi reloading may take some time")
         ssh.sendline("wifi reload")
 
     else:
